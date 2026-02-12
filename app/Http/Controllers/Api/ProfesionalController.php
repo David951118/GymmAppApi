@@ -8,9 +8,6 @@ use App\Models\Profesional;
 use App\Models\ContactoEmergencia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{DB, Hash, Validator};
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Password;
-use App\Notifications\SetPasswordNotification;
 
 class ProfesionalController extends Controller
 {
@@ -38,6 +35,7 @@ class ProfesionalController extends Controller
             'celular' => 'required|string|max:30',
             'genero' => 'nullable|string|max:20',
             'fecha_nacimiento' => 'nullable|date',
+            'contrasena' => 'required|string|min:8|confirmed',
 
             // Contacto de emergencia (OBLIGATORIO)
             'contacto_emergencia.nombre' => 'required|string|max:150',
@@ -67,8 +65,8 @@ class ProfesionalController extends Controller
                 'celular' => $request->celular,
                 'genero' => $request->genero,
                 'fecha_nacimiento' => $request->fecha_nacimiento,
-                'contrasena' => Hash::make(Str::random(32)),
-                'estado_usuario' => 'inactivo',
+                'contrasena' => Hash::make($request->contrasena),
+                'estado_usuario' => 'activo',
             ]);
 
             // 2. Crear contacto de emergencia
@@ -86,14 +84,12 @@ class ProfesionalController extends Controller
                 'fecha_ingreso' => $request->fecha_ingreso,
             ]);
 
-            // 4. Enviar notificación de activación
-            $token = Password::broker()->createToken($usuario);
-            $usuario->notify(new SetPasswordNotification($token));
+
 
             DB::commit();
 
             return response()->json([
-                'message' => 'Profesional creado exitosamente. Se envió correo de activación para establecer contraseña.',
+                'message' => 'Profesional creado exitosamente.',
                 'usuario' => $usuario->load('contactosEmergencia'),
                 'profesional' => $profesional->load('centro'),
             ], 201);

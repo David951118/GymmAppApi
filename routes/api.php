@@ -23,21 +23,19 @@ use App\Http\Controllers\Api\MaquinaController;
 */
 
 // Public routes
-Route::post('/register', [AuthController::class, 'register']); // Solo para Afiliados
+Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login'])->name('login');
-Route::post('/activate-account', [App\Http\Controllers\Api\AccountActivationController::class, 'activate']);
-Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verify'])->name('verification.verify');
 
-// Protected routes (requires authentication)
+// Protected routes
 Route::middleware(['auth:sanctum'])->group(function () {
 
     // Auth routes
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::post('/email/verification-notification', [AuthController::class, 'resendVerification']);
     Route::get('/me', [AuthController::class, 'me']);
+    Route::post('/change-password', [AuthController::class, 'changePassword']);
 
-    // Routes requiring verified email
-    Route::middleware(['verified'])->group(function () {
+    // Routes requiring verified email (REMOVED verification middleware for simplicity)
+    Route::middleware([])->group(function () {
 
         // ADMIN ROUTES - Creation of internal staff
         Route::middleware(['role:administrador'])->group(function () {

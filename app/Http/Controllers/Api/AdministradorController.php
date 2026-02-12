@@ -9,8 +9,6 @@ use App\Models\ContactoEmergencia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{DB, Hash, Validator};
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Password;
-use App\Notifications\SetPasswordNotification;
 
 class AdministradorController extends Controller
 {
@@ -41,6 +39,8 @@ class AdministradorController extends Controller
             'celular' => 'required|string|max:30',
             'genero' => 'nullable|string|max:20',
             'fecha_nacimiento' => 'nullable|date',
+            'contrasena' => 'required|string|min:8|confirmed',
+            'estado_usuario' => 'nullable|string|in:activo,inactivo,pendiente',
 
             // Contacto de emergencia (OBLIGATORIO)
             'contacto_emergencia.nombre' => 'required|string|max:150',
@@ -69,8 +69,8 @@ class AdministradorController extends Controller
                 'celular' => $request->celular,
                 'genero' => $request->genero,
                 'fecha_nacimiento' => $request->fecha_nacimiento,
-                'contrasena' => Hash::make(Str::random(32)), // Temporal
-                'estado_usuario' => 'inactivo', // Inactivo hasta verificar email
+                'contrasena' => Hash::make($request->contrasena),
+                'estado_usuario' => $request->estado_usuario ?? 'activo',
             ]);
 
             // 2. Crear contacto de emergencia (OBLIGATORIO)
@@ -88,15 +88,13 @@ class AdministradorController extends Controller
                 'is_super_admin' => false, // Nunca true desde API
             ]);
 
-            // 4. Enviar notificación de activación con token
-            $token = Password::broker()->createToken($usuario);
-            $usuario->notify(new SetPasswordNotification($token));
+
 
             DB::commit();
 
             return response()->json([
-                'message' => 'Administrador creado exitosamente. Se envió correo de activación para establecer contraseña.',
-                'usuario' => $usuario->load('contactosEmergencia'),
+                'message' => 'Administrador creado exitosamente.',
+                'usuario' => $usuario,
                 'administrador' => $admin->load('centro'),
             ], 201);
 

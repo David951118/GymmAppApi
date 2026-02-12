@@ -2,17 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Illuminate\Auth\Passwords\CanResetPassword;
-use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
-
-class Usuario extends Authenticatable implements MustVerifyEmail, CanResetPasswordContract
+class Usuario extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, CanResetPassword;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $table = 'usuarios';
     protected $primaryKey = 'id_usuario';
@@ -73,13 +69,7 @@ class Usuario extends Authenticatable implements MustVerifyEmail, CanResetPasswo
         return $this->correo;
     }
 
-    /**
-     * Get the email address where password reset links are sent.
-     */
-    public function getEmailForPasswordReset()
-    {
-        return $this->correo;
-    }
+
 
     // Relationships
     public function contactosEmergencia()

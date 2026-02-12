@@ -7,10 +7,7 @@ use App\Models\Usuario;
 use App\Models\Trabajador;
 use App\Models\ContactoEmergencia;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\{DB, Hash, Validator};
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Password;
-use App\Notifications\SetPasswordNotification;
 
 class TrabajadorController extends Controller
 {
@@ -38,6 +35,7 @@ class TrabajadorController extends Controller
             'celular' => 'required|string|max:30',
             'genero' => 'nullable|string|max:20',
             'fecha_nacimiento' => 'nullable|date',
+            'contrasena' => 'required|string|min:8|confirmed',
 
             // Contacto de emergencia (OBLIGATORIO)
             'contacto_emergencia.nombre' => 'required|string|max:150',
@@ -66,8 +64,8 @@ class TrabajadorController extends Controller
                 'celular' => $request->celular,
                 'genero' => $request->genero,
                 'fecha_nacimiento' => $request->fecha_nacimiento,
-                'contrasena' => Hash::make(Str::random(32)),
-                'estado_usuario' => 'inactivo',
+                'contrasena' => Hash::make($request->contrasena),
+                'estado_usuario' => 'activo',
             ]);
 
             // 2. Crear contacto de emergencia
@@ -84,14 +82,12 @@ class TrabajadorController extends Controller
                 'puesto' => $request->puesto,
             ]);
 
-            // 4. Enviar notificación de activación
-            $token = Password::broker()->createToken($usuario);
-            $usuario->notify(new SetPasswordNotification($token));
+
 
             DB::commit();
 
             return response()->json([
-                'message' => 'Trabajador creado exitosamente. Se envió correo de activación para establecer contraseña.',
+                'message' => 'Trabajador creado exitosamente.',
                 'usuario' => $usuario->load('contactosEmergencia'),
                 'trabajador' => $trabajador->load('centro'),
             ], 201);

@@ -120,6 +120,17 @@ class AuthController extends Controller
 
         $usuario = Usuario::where('correo', $request->correo)->first();
 
+        // DEBUG: Imprimir hash y verificación (SOLO DESARROLLO)
+        if ($usuario) {
+            \Illuminate\Support\Facades\Log::info('Login Debug:', [
+                'correo' => $request->correo,
+                'input_password' => $request->contrasena,
+                'stored_hash' => $usuario->contrasena,
+                'hash_check' => Hash::check($request->contrasena, $usuario->contrasena),
+                'estado' => $usuario->estado_usuario
+            ]);
+        }
+
         if (!$usuario || !Hash::check($request->contrasena, $usuario->contrasena)) {
             return response()->json([
                 'message' => 'Credenciales inválidas'
@@ -210,6 +221,36 @@ class AuthController extends Controller
         return response()->json([
             'user' => $usuario,
             'roles' => $usuario->getRoles(),
+        ]);
+    }
+
+    /**
+     * Change user password.
+     */
+    public function changePassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'current_password' => 'required',
+            'new_password' => 'required|string|min:8|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $user = $request->user();
+
+        if (!Hash::check($request->current_password, $user->contrasena)) {
+            return response()->json([
+                'message' => 'La contraseña actual es incorrecta.'
+            ], 400);
+        }
+
+        $user->contrasena = Hash::make($request->new_password);
+        $user->save();
+
+        return response()->json([
+            'message' => 'Contraseña actualizada exitosamente.'
         ]);
     }
 }
