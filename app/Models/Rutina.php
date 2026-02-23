@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Rutina extends Model
 {
-    use HasFactory;
+    use HasFactory, Searchable, SoftDeletes;
 
     protected $table = 'rutinas';
     protected $primaryKey = 'id_rutina';

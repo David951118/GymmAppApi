@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ContactoEmergencia extends Model
 {
-    use HasFactory;
+    use HasFactory, Searchable, SoftDeletes;
 
     protected $table = 'contacto_emergencia';
     protected $primaryKey = 'id_contacto';

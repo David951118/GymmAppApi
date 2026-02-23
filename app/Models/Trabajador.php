@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Trabajador extends Model
 {
-    use HasFactory;
+    use HasFactory, Searchable, SoftDeletes;
 
     protected $table = 'trabajadores';
     protected $primaryKey = 'id_trabajador';

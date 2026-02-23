@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Administrador extends Model
 {
-    use HasFactory;
+    use HasFactory, Searchable, SoftDeletes;
 
     protected $table = 'administradores';
     /**

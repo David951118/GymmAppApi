@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Pago extends Model
 {
-    use HasFactory;
+    use HasFactory, Searchable, SoftDeletes;
 
     protected $table = 'pagos';
     protected $primaryKey = 'id_pago';

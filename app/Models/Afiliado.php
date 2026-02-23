@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Afiliado extends Model
 {
-    use HasFactory;
+    use HasFactory, Searchable, SoftDeletes;
 
     protected $table = 'afiliados';
     protected $primaryKey = 'id_afiliado';

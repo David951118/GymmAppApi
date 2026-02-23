@@ -55,8 +55,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::apiResource('admin/trabajadores', TrabajadorController::class);
         });
 
-        // Afiliado routes - Accessible by afiliados and admins
-        Route::middleware(['role:afiliado,administrador'])->group(function () {
+        // Afiliado routes - Accessible by afiliados, professionals and admins
+        Route::middleware(['role:afiliado,profesional,administrador'])->group(function () {
             Route::apiResource('afiliados', AfiliadoController::class)->except(['store']); // Store is via public register
         });
 

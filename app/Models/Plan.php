@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Plan extends Model
 {
-    use HasFactory;
+    use HasFactory, Searchable, SoftDeletes;
 
     protected $table = 'planes';
     protected $primaryKey = 'id_plan';

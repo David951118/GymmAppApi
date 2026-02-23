@@ -259,17 +259,17 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/afiliados",
+                            "raw": "{{base_url}}\/register",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                "afiliados"
+                                "register"
                             ]
                         },
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"ejemplo\": \"data\"\n}",
+                            "raw": "{\n    \"nombre\": \"Juan\",\n    \"apellidos\": \"Perez\",\n    \"correo\": \"juan73@example.com\",\n    \"celular\": \"12345678\",\n    \"contrasena\": \"password123\",\n    \"contrasena_confirmation\": \"password123\",\n    \"centro_id\": 1,\n    \"contacto_emergencia\": {\n        \"nombre\": \"Maria\",\n        \"celular\": \"98765432\"\n    }\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"

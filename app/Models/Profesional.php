@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Profesional extends Model
 {
-    use HasFactory;
+    use HasFactory, Searchable, SoftDeletes;
 
     protected $table = 'profesionales';
     protected $primaryKey = 'id_profesional';

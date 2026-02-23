@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Maquina extends Model
 {
-    use HasFactory;
+    use HasFactory, Searchable, SoftDeletes;
 
     protected $table = 'maquinas';
     protected $primaryKey = 'id_maquina';

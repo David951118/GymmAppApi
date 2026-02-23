@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class CentroDeportivo extends Model
 {
-    use HasFactory;
+    use HasFactory, Searchable, SoftDeletes;
 
     protected $table = 'centro_deportivo';
     protected $primaryKey = 'id_centro';

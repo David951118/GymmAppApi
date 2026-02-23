@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Antropometria extends Model
 {
-    use HasFactory;
+    use HasFactory, Searchable, SoftDeletes;
 
     protected $table = 'antropometrias';
     protected $primaryKey = 'id_antropometria';
