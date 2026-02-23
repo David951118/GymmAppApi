@@ -15,6 +15,8 @@ use App\Http\Controllers\Api\ActividadDeportivaController;
 use App\Http\Controllers\Api\EjercicioController;
 use App\Http\Controllers\Api\CentroDeportivoController;
 use App\Http\Controllers\Api\MaquinaController;
+use App\Http\Controllers\Api\GlobalSearchController;
+use App\Http\Controllers\Api\HealthCheckController;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,6 +25,7 @@ use App\Http\Controllers\Api\MaquinaController;
 */
 
 // Public routes
+Route::get('/health', HealthCheckController::class);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 
@@ -33,6 +36,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/change-password', [AuthController::class, 'changePassword']);
+    Route::get('/search', GlobalSearchController::class);
 
     // Routes requiring verified email (REMOVED verification middleware for simplicity)
     Route::middleware([])->group(function () {

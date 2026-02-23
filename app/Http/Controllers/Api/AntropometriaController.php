@@ -11,14 +11,16 @@ class AntropometriaController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Antropometria::with('afiliado.usuario');
+        $limit = $request->get('limit', 15);
+        $query = Antropometria::with('afiliado.usuario')
+            ->search($request->all());
 
         if ($request->has('afiliado_id')) {
             $query->where('afiliado_id', $request->afiliado_id);
         }
 
-        $antropometrias = $query->orderBy('fecha_medicion', 'desc')->paginate(15);
-        return response()->json($antropometrias);
+        $antropometrias = $query->orderBy('fecha_medicion', 'desc')->paginate($limit);
+        return $this->successResponse($antropometrias, 'Antropometrías obtenidas exitosamente.');
     }
 
     public function store(Request $request)
@@ -33,23 +35,29 @@ class AntropometriaController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return $this->errorResponse($validator->errors(), 'Errores de validación', 422);
         }
 
-        $antropometria = Antropometria::create($request->all());
-        return response()->json($antropometria->load('afiliado.usuario'), 201);
+        try {
+            $antropometria = Antropometria::create($request->all());
+            return $this->successResponse($antropometria->load('afiliado.usuario'), 'Medición antropométrica creada exitosamente.', 201);
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al crear la medición antropométrica.', 500);
+        }
     }
 
     public function show($id)
     {
-        $antropometria = Antropometria::with('afiliado.usuario')->findOrFail($id);
-        return response()->json($antropometria);
+        try {
+            $antropometria = Antropometria::with('afiliado.usuario')->findOrFail($id);
+            return $this->successResponse($antropometria, 'Antropometría obtenida exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse(null, 'Antropometría no encontrada.', 404);
+        }
     }
 
     public function update(Request $request, $id)
     {
-        $antropometria = Antropometria::findOrFail($id);
-
         $validator = Validator::make($request->all(), [
             'peso' => 'sometimes|numeric|min:0',
             'altura_cm' => 'sometimes|numeric|min:0',
@@ -58,16 +66,26 @@ class AntropometriaController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return $this->errorResponse($validator->errors(), 'Errores de validación', 422);
         }
 
-        $antropometria->update($request->all());
-        return response()->json($antropometria->load('afiliado.usuario'));
+        try {
+            $antropometria = Antropometria::findOrFail($id);
+            $antropometria->update($request->all());
+            return $this->successResponse($antropometria->load('afiliado.usuario'), 'Medición antropométrica actualizada exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al actualizar la medición antropométrica.', 500);
+        }
     }
 
     public function destroy($id)
     {
-        Antropometria::findOrFail($id)->delete();
-        return response()->json(['message' => 'Medición eliminada'], 200);
+        try {
+            $antropometria = Antropometria::findOrFail($id);
+            $antropometria->delete();
+            return $this->successResponse(null, 'Medición eliminada exitosamente.', 200);
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al eliminar la medición antropométrica.', 500);
+        }
     }
 }

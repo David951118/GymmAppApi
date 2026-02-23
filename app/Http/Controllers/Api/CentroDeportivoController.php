@@ -9,10 +9,14 @@ use Illuminate\Support\Facades\Validator;
 
 class CentroDeportivoController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $centros = CentroDeportivo::with(['profesionales', 'trabajadores', 'administradores'])->paginate(15);
-        return response()->json($centros);
+        $limit = $request->get('limit', 15);
+        $centros = CentroDeportivo::with(['profesionales', 'trabajadores', 'administradores'])
+            ->search($request->all())
+            ->paginate($limit);
+
+        return $this->successResponse($centros, 'Centros deportivos obtenidos exitosamente.');
     }
 
     public function store(Request $request)
@@ -24,30 +28,36 @@ class CentroDeportivoController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return $this->errorResponse($validator->errors(), 'Errores de validación', 422);
         }
 
-        $centro = CentroDeportivo::create($request->all());
-        return response()->json($centro, 201);
+        try {
+            $centro = CentroDeportivo::create($request->all());
+            return $this->successResponse($centro, 'Centro deportivo creado exitosamente.', 201);
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al crear el centro deportivo.', 500);
+        }
     }
 
     public function show($id)
     {
-        $centro = CentroDeportivo::with([
-            'profesionales.usuario',
-            'trabajadores.usuario',
-            'administradores.usuario',
-            'actividades',
-            'maquinas'
-        ])->findOrFail($id);
+        try {
+            $centro = CentroDeportivo::with([
+                'profesionales.usuario',
+                'trabajadores.usuario',
+                'administradores.usuario',
+                'actividades',
+                'maquinas'
+            ])->findOrFail($id);
 
-        return response()->json($centro);
+            return $this->successResponse($centro, 'Centro deportivo obtenido exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse(null, 'Centro deportivo no encontrado.', 404);
+        }
     }
 
     public function update(Request $request, $id)
     {
-        $centro = CentroDeportivo::findOrFail($id);
-
         $validator = Validator::make($request->all(), [
             'nombre' => 'sometimes|string|max:255',
             'ubicacion' => 'sometimes|string',
@@ -55,16 +65,26 @@ class CentroDeportivoController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return $this->errorResponse($validator->errors(), 'Errores de validación', 422);
         }
 
-        $centro->update($request->all());
-        return response()->json($centro);
+        try {
+            $centro = CentroDeportivo::findOrFail($id);
+            $centro->update($request->all());
+            return $this->successResponse($centro, 'Centro deportivo actualizado exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al actualizar el centro deportivo.', 500);
+        }
     }
 
     public function destroy($id)
     {
-        CentroDeportivo::findOrFail($id)->delete();
-        return response()->json(['message' => 'Centro deportivo eliminado'], 200);
+        try {
+            $centro = CentroDeportivo::findOrFail($id);
+            $centro->delete();
+            return $this->successResponse(null, 'Centro deportivo eliminado exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al eliminar el centro deportivo.', 500);
+        }
     }
 }

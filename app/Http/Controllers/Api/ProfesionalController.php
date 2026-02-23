@@ -14,10 +14,14 @@ class ProfesionalController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $profesionales = Profesional::with(['usuario', 'centro'])->paginate(15);
-        return response()->json($profesionales);
+        $limit = $request->get('limit', 15);
+        $profesionales = Profesional::with(['usuario', 'centro'])
+            ->search($request->all())
+            ->paginate($limit);
+
+        return $this->successResponse($profesionales, 'Profesionales obtenidos exitosamente.');
     }
 
     /**
@@ -48,10 +52,7 @@ class ProfesionalController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Error de validación',
-                'errors' => $validator->errors()
-            ], 422);
+            return $this->errorResponse($validator->errors(), 'Errores de validación', 422);
         }
 
         DB::beginTransaction();
@@ -84,22 +85,16 @@ class ProfesionalController extends Controller
                 'fecha_ingreso' => $request->fecha_ingreso,
             ]);
 
-
-
             DB::commit();
 
-            return response()->json([
-                'message' => 'Profesional creado exitosamente.',
+            return $this->successResponse([
                 'usuario' => $usuario->load('contactosEmergencia'),
                 'profesional' => $profesional->load('centro'),
-            ], 201);
+            ], 'Profesional creado exitosamente.', 201);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'message' => 'Error al crear profesional',
-                'error' => $e->getMessage()
-            ], 500);
+            return $this->errorResponse($e->getMessage(), 'Error al crear profesional', 500);
         }
     }
 
@@ -108,10 +103,14 @@ class ProfesionalController extends Controller
      */
     public function show($id)
     {
-        $profesional = Profesional::with(['usuario.contactosEmergencia', 'centro', 'actividades', 'rutinas'])
-            ->findOrFail($id);
+        try {
+            $profesional = Profesional::with(['usuario.contactosEmergencia', 'centro', 'actividades', 'rutinas'])
+                ->findOrFail($id);
 
-        return response()->json($profesional);
+            return $this->successResponse($profesional, 'Profesional obtenido exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse(null, 'Profesional no encontrado.', 404);
+        }
     }
 
     /**
@@ -119,8 +118,6 @@ class ProfesionalController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $profesional = Profesional::findOrFail($id);
-
         $validator = Validator::make($request->all(), [
             'centro_id' => 'sometimes|exists:centro_deportivo,id_centro',
             'especialidad' => 'sometimes|string|max:150',
@@ -128,11 +125,16 @@ class ProfesionalController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return $this->errorResponse($validator->errors(), 'Errores de validación', 422);
         }
 
-        $profesional->update($request->all());
-        return response()->json($profesional->load(['usuario', 'centro']));
+        try {
+            $profesional = Profesional::findOrFail($id);
+            $profesional->update($request->all());
+            return $this->successResponse($profesional->load(['usuario', 'centro']), 'Profesional actualizado exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al actualizar el profesional', 500);
+        }
     }
 
     /**
@@ -140,7 +142,12 @@ class ProfesionalController extends Controller
      */
     public function destroy($id)
     {
-        Profesional::findOrFail($id)->delete();
-        return response()->json(['message' => 'Profesional eliminado'], 200);
+        try {
+            $profesional = Profesional::findOrFail($id);
+            $profesional->delete();
+            return $this->successResponse(null, 'Profesional eliminado exitosamente.', 200);
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al eliminar el profesional.', 500);
+        }
     }
 }

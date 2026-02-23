@@ -11,7 +11,9 @@ class PagoController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Pago::with(['plan.afiliado.usuario']);
+        $limit = $request->get('limit', 15);
+        $query = Pago::with(['plan.afiliado.usuario'])
+            ->search($request->all());
 
         if ($request->has('plan_id')) {
             $query->where('plan_id', $request->plan_id);
@@ -21,8 +23,8 @@ class PagoController extends Controller
             $query->where('estado', $request->estado);
         }
 
-        $pagos = $query->orderBy('fecha_cobro', 'desc')->paginate(15);
-        return response()->json($pagos);
+        $pagos = $query->orderBy('fecha_cobro', 'desc')->paginate($limit);
+        return $this->successResponse($pagos, 'Pagos obtenidos exitosamente.');
     }
 
     public function store(Request $request)
@@ -37,23 +39,29 @@ class PagoController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return $this->errorResponse($validator->errors(), 'Errores de validación', 422);
         }
 
-        $pago = Pago::create($request->all());
-        return response()->json($pago->load('plan.afiliado.usuario'), 201);
+        try {
+            $pago = Pago::create($request->all());
+            return $this->successResponse($pago->load('plan.afiliado.usuario'), 'Pago creado exitosamente.', 201);
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al crear el pago.', 500);
+        }
     }
 
     public function show($id)
     {
-        $pago = Pago::with(['plan.afiliado.usuario'])->findOrFail($id);
-        return response()->json($pago);
+        try {
+            $pago = Pago::with(['plan.afiliado.usuario'])->findOrFail($id);
+            return $this->successResponse($pago, 'Pago obtenido exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse(null, 'Pago no encontrado.', 404);
+        }
     }
 
     public function update(Request $request, $id)
     {
-        $pago = Pago::findOrFail($id);
-
         $validator = Validator::make($request->all(), [
             'estado' => 'sometimes|string|max:50',
             'metodo_pago' => 'sometimes|string|max:50',
@@ -61,16 +69,26 @@ class PagoController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return $this->errorResponse($validator->errors(), 'Errores de validación', 422);
         }
 
-        $pago->update($request->all());
-        return response()->json($pago->load('plan.afiliado.usuario'));
+        try {
+            $pago = Pago::findOrFail($id);
+            $pago->update($request->all());
+            return $this->successResponse($pago->load('plan.afiliado.usuario'), 'Pago actualizado exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al actualizar el pago.', 500);
+        }
     }
 
     public function destroy($id)
     {
-        Pago::findOrFail($id)->delete();
-        return response()->json(['message' => 'Pago eliminado'], 200);
+        try {
+            $pago = Pago::findOrFail($id);
+            $pago->delete();
+            return $this->successResponse(null, 'Pago eliminado exitosamente.', 200);
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al eliminar el pago.', 500);
+        }
     }
 }

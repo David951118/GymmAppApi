@@ -11,7 +11,9 @@ class RutinaController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Rutina::with(['afiliado.usuario', 'profesional.usuario', 'ejercicios']);
+        $limit = $request->get('limit', 15);
+        $query = Rutina::with(['afiliado.usuario', 'profesional.usuario', 'ejercicios'])
+            ->search($request->all());
 
         if ($request->has('afiliado_id')) {
             $query->where('afiliado_id', $request->afiliado_id);
@@ -21,8 +23,8 @@ class RutinaController extends Controller
             $query->where('profesional_id', $request->profesional_id);
         }
 
-        $rutinas = $query->paginate(15);
-        return response()->json($rutinas);
+        $rutinas = $query->paginate($limit);
+        return $this->successResponse($rutinas, 'Rutinas obtenidas exitosamente.');
     }
 
     public function store(Request $request)
@@ -40,34 +42,40 @@ class RutinaController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return $this->errorResponse($validator->errors(), 'Errores de validación', 422);
         }
 
-        $rutina = Rutina::create($request->except('ejercicios'));
+        try {
+            $rutina = Rutina::create($request->except('ejercicios'));
 
-        // Attach exercises if provided
-        if ($request->has('ejercicios')) {
-            foreach ($request->ejercicios as $ejercicio) {
-                $rutina->ejercicios()->attach($ejercicio['ejercicio_id'], [
-                    'series' => $ejercicio['series'] ?? null,
-                    'repeticiones' => $ejercicio['repeticiones'] ?? null,
-                ]);
+            // Attach exercises if provided
+            if ($request->has('ejercicios')) {
+                foreach ($request->ejercicios as $ejercicio) {
+                    $rutina->ejercicios()->attach($ejercicio['ejercicio_id'], [
+                        'series' => $ejercicio['series'] ?? null,
+                        'repeticiones' => $ejercicio['repeticiones'] ?? null,
+                    ]);
+                }
             }
-        }
 
-        return response()->json($rutina->load(['afiliado.usuario', 'profesional.usuario', 'ejercicios']), 201);
+            return $this->successResponse($rutina->load(['afiliado.usuario', 'profesional.usuario', 'ejercicios']), 'Rutina creada exitosamente.', 201);
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al crear la rutina.', 500);
+        }
     }
 
     public function show($id)
     {
-        $rutina = Rutina::with(['afiliado.usuario', 'profesional.usuario', 'ejercicios'])->findOrFail($id);
-        return response()->json($rutina);
+        try {
+            $rutina = Rutina::with(['afiliado.usuario', 'profesional.usuario', 'ejercicios'])->findOrFail($id);
+            return $this->successResponse($rutina, 'Rutina obtenida exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse(null, 'Rutina no encontrada.', 404);
+        }
     }
 
     public function update(Request $request, $id)
     {
-        $rutina = Rutina::findOrFail($id);
-
         $validator = Validator::make($request->all(), [
             'nombre' => 'sometimes|string|max:200',
             'sesiones_totales' => 'sometimes|integer|min:1',
@@ -79,28 +87,38 @@ class RutinaController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return $this->errorResponse($validator->errors(), 'Errores de validación', 422);
         }
 
-        $rutina->update($request->except('ejercicios'));
+        try {
+            $rutina = Rutina::findOrFail($id);
+            $rutina->update($request->except('ejercicios'));
 
-        // Update exercises if provided
-        if ($request->has('ejercicios')) {
-            $rutina->ejercicios()->detach();
-            foreach ($request->ejercicios as $ejercicio) {
-                $rutina->ejercicios()->attach($ejercicio['ejercicio_id'], [
-                    'series' => $ejercicio['series'] ?? null,
-                    'repeticiones' => $ejercicio['repeticiones'] ?? null,
-                ]);
+            // Update exercises if provided
+            if ($request->has('ejercicios')) {
+                $rutina->ejercicios()->detach();
+                foreach ($request->ejercicios as $ejercicio) {
+                    $rutina->ejercicios()->attach($ejercicio['ejercicio_id'], [
+                        'series' => $ejercicio['series'] ?? null,
+                        'repeticiones' => $ejercicio['repeticiones'] ?? null,
+                    ]);
+                }
             }
-        }
 
-        return response()->json($rutina->load(['afiliado.usuario', 'profesional.usuario', 'ejercicios']));
+            return $this->successResponse($rutina->load(['afiliado.usuario', 'profesional.usuario', 'ejercicios']), 'Rutina actualizada exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al actualizar la rutina.', 500);
+        }
     }
 
     public function destroy($id)
     {
-        Rutina::findOrFail($id)->delete();
-        return response()->json(['message' => 'Rutina eliminada'], 200);
+        try {
+            $rutina = Rutina::findOrFail($id);
+            $rutina->delete();
+            return $this->successResponse(null, 'Rutina eliminada exitosamente.', 200);
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al eliminar la rutina.', 500);
+        }
     }
 }

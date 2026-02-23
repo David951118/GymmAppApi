@@ -7,6 +7,7 @@ use App\Models\Usuario;
 use App\Models\Trabajador;
 use App\Models\ContactoEmergencia;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\{DB, Hash, Validator};
 use Illuminate\Support\Str;
 
 class TrabajadorController extends Controller
@@ -14,10 +15,14 @@ class TrabajadorController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $trabajadores = Trabajador::with(['usuario', 'centro'])->paginate(15);
-        return response()->json($trabajadores);
+        $limit = $request->get('limit', 15);
+        $trabajadores = Trabajador::with(['usuario', 'centro'])
+            ->search($request->all())
+            ->paginate($limit);
+
+        return $this->successResponse($trabajadores, 'Trabajadores obtenidos exitosamente.');
     }
 
     /**
@@ -47,10 +52,7 @@ class TrabajadorController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Error de validación',
-                'errors' => $validator->errors()
-            ], 422);
+            return $this->errorResponse($validator->errors(), 'Errores de validación', 422);
         }
 
         DB::beginTransaction();
@@ -82,22 +84,16 @@ class TrabajadorController extends Controller
                 'puesto' => $request->puesto,
             ]);
 
-
-
             DB::commit();
 
-            return response()->json([
-                'message' => 'Trabajador creado exitosamente.',
+            return $this->successResponse([
                 'usuario' => $usuario->load('contactosEmergencia'),
                 'trabajador' => $trabajador->load('centro'),
-            ], 201);
+            ], 'Trabajador creado exitosamente.', 201);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'message' => 'Error al crear trabajador',
-                'error' => $e->getMessage()
-            ], 500);
+            return $this->errorResponse($e->getMessage(), 'Error al crear trabajador', 500);
         }
     }
 
@@ -106,10 +102,14 @@ class TrabajadorController extends Controller
      */
     public function show($id)
     {
-        $trabajador = Trabajador::with(['usuario.contactosEmergencia', 'centro'])
-            ->findOrFail($id);
+        try {
+            $trabajador = Trabajador::with(['usuario.contactosEmergencia', 'centro'])
+                ->findOrFail($id);
 
-        return response()->json($trabajador);
+            return $this->successResponse($trabajador, 'Trabajador obtenido exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse(null, 'Trabajador no encontrado.', 404);
+        }
     }
 
     /**
@@ -117,19 +117,22 @@ class TrabajadorController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $trabajador = Trabajador::findOrFail($id);
-
         $validator = Validator::make($request->all(), [
             'centro_id' => 'sometimes|exists:centro_deportivo,id_centro',
             'puesto' => 'sometimes|string|max:100',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return $this->errorResponse($validator->errors(), 'Errores de validación', 422);
         }
 
-        $trabajador->update($request->all());
-        return response()->json($trabajador->load(['usuario', 'centro']));
+        try {
+            $trabajador = Trabajador::findOrFail($id);
+            $trabajador->update($request->all());
+            return $this->successResponse($trabajador->load(['usuario', 'centro']), 'Trabajador actualizado exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al actualizar el trabajador.', 500);
+        }
     }
 
     /**
@@ -137,7 +140,12 @@ class TrabajadorController extends Controller
      */
     public function destroy($id)
     {
-        Trabajador::findOrFail($id)->delete();
-        return response()->json(['message' => 'Trabajador eliminado'], 200);
+        try {
+            $trabajador = Trabajador::findOrFail($id);
+            $trabajador->delete();
+            return $this->successResponse(null, 'Trabajador eliminado exitosamente.', 200);
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al eliminar el trabajador.', 500);
+        }
     }
 }

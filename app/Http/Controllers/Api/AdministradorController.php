@@ -15,13 +15,15 @@ class AdministradorController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
+        $limit = $request->get('limit', 15);
         $administradores = Administrador::with(['usuario', 'centro'])
             ->where('is_super_admin', false) // No mostrar Super Admin en listado
-            ->paginate(15);
+            ->search($request->all())
+            ->paginate($limit);
 
-        return response()->json($administradores);
+        return $this->successResponse($administradores, 'Administradores obtenidos exitosamente.');
     }
 
     /**
@@ -52,15 +54,12 @@ class AdministradorController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Error de validación',
-                'errors' => $validator->errors()
-            ], 422);
+            return $this->errorResponse($validator->errors(), 'Errores de validación', 422);
         }
 
         DB::beginTransaction();
         try {
-            // 1. Crear usuario (SIN contraseña aún, se establece por email)
+            // 1. Crear usuario 
             $usuario = Usuario::create([
                 'nombre' => $request->nombre,
                 'apellidos' => $request->apellidos,
@@ -88,22 +87,16 @@ class AdministradorController extends Controller
                 'is_super_admin' => false, // Nunca true desde API
             ]);
 
-
-
             DB::commit();
 
-            return response()->json([
-                'message' => 'Administrador creado exitosamente.',
+            return $this->successResponse([
                 'usuario' => $usuario,
                 'administrador' => $admin->load('centro'),
-            ], 201);
+            ], 'Administrador creado exitosamente.', 201);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'message' => 'Error al crear administrador',
-                'error' => $e->getMessage()
-            ], 500);
+            return $this->errorResponse($e->getMessage(), 'Error al crear administrador', 500);
         }
     }
 
@@ -112,10 +105,14 @@ class AdministradorController extends Controller
      */
     public function show($id)
     {
-        $admin = Administrador::with(['usuario.contactosEmergencia', 'centro'])
-            ->findOrFail($id);
+        try {
+            $admin = Administrador::with(['usuario.contactosEmergencia', 'centro'])
+                ->findOrFail($id);
 
-        return response()->json($admin);
+            return $this->successResponse($admin, 'Administrador obtenido exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse(null, 'Administrador no encontrado.', 404);
+        }
     }
 
     /**
@@ -123,32 +120,31 @@ class AdministradorController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $admin = Administrador::findOrFail($id);
-
-        // No permitir modificar is_super_admin desde API
-        if ($admin->is_super_admin) {
-            return response()->json([
-                'message' => 'No se puede modificar el Super Admin'
-            ], 403);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'centro_id' => 'sometimes|exists:centro_deportivo,id_centro',
-            'nivel' => 'sometimes|string|max:50',
-
-            // Actualizar datos de usuario
-            'usuario.nombre' => 'sometimes|string|max:150',
-            'usuario.apellidos' => 'sometimes|string|max:150',
-            'usuario.celular' => 'sometimes|string|max:30',
-            'usuario.genero' => 'sometimes|string|max:20',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        DB::beginTransaction();
         try {
+            $admin = Administrador::findOrFail($id);
+
+            // No permitir modificar is_super_admin desde API
+            if ($admin->is_super_admin) {
+                return $this->errorResponse(null, 'No se puede modificar el Super Admin', 403);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'centro_id' => 'sometimes|exists:centro_deportivo,id_centro',
+                'nivel' => 'sometimes|string|max:50',
+
+                // Actualizar datos de usuario
+                'usuario.nombre' => 'sometimes|string|max:150',
+                'usuario.apellidos' => 'sometimes|string|max:150',
+                'usuario.celular' => 'sometimes|string|max:30',
+                'usuario.genero' => 'sometimes|string|max:20',
+            ]);
+
+            if ($validator->fails()) {
+                return $this->errorResponse($validator->errors(), 'Errores de validación', 422);
+            }
+
+            DB::beginTransaction();
+
             // Actualizar administrador
             $admin->update($request->only(['centro_id', 'nivel']));
 
@@ -159,14 +155,11 @@ class AdministradorController extends Controller
 
             DB::commit();
 
-            return response()->json($admin->load(['usuario', 'centro']));
+            return $this->successResponse($admin->load(['usuario', 'centro']), 'Administrador actualizado exitosamente.');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'message' => 'Error al actualizar',
-                'error' => $e->getMessage()
-            ], 500);
+            return $this->errorResponse($e->getMessage(), 'Error al actualizar administrador', 500);
         }
     }
 
@@ -175,19 +168,19 @@ class AdministradorController extends Controller
      */
     public function destroy($id)
     {
-        $admin = Administrador::findOrFail($id);
+        try {
+            $admin = Administrador::findOrFail($id);
 
-        // No permitir eliminar Super Admin
-        if ($admin->is_super_admin) {
-            return response()->json([
-                'message' => 'No se puede eliminar el Super Admin'
-            ], 403);
+            // No permitir eliminar Super Admin
+            if ($admin->is_super_admin) {
+                return $this->errorResponse(null, 'No se puede eliminar el Super Admin', 403);
+            }
+
+            $admin->delete(); // Soft delete. El usuario original requiere manejo especial si se desea borrar completo, pero softdelete cubre la entidad admin.
+
+            return $this->successResponse(null, 'Administrador eliminado exitosamente.', 200);
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al eliminar administrador', 500);
         }
-
-        $admin->delete(); // Cascade eliminará el usuario también
-
-        return response()->json([
-            'message' => 'Administrador eliminado'
-        ], 200);
     }
 }

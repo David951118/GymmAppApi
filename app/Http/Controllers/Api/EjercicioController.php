@@ -9,10 +9,11 @@ use Illuminate\Support\Facades\Validator;
 
 class EjercicioController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $ejercicios = Ejercicio::paginate(15);
-        return response()->json($ejercicios);
+        $limit = $request->get('limit', 15);
+        $ejercicios = Ejercicio::search($request->all())->paginate($limit);
+        return $this->successResponse($ejercicios, 'Ejercicios obtenidos exitosamente.');
     }
 
     public function store(Request $request)
@@ -23,39 +24,55 @@ class EjercicioController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return $this->errorResponse($validator->errors(), 'Errores de validación', 422);
         }
 
-        $ejercicio = Ejercicio::create($request->all());
-        return response()->json($ejercicio, 201);
+        try {
+            $ejercicio = Ejercicio::create($request->all());
+            return $this->successResponse($ejercicio, 'Ejercicio creado exitosamente.', 201);
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al crear el ejercicio.', 500);
+        }
     }
 
     public function show($id)
     {
-        $ejercicio = Ejercicio::with(['rutinas', 'maquinas'])->findOrFail($id);
-        return response()->json($ejercicio);
+        try {
+            $ejercicio = Ejercicio::with(['rutinas', 'maquinas'])->findOrFail($id);
+            return $this->successResponse($ejercicio, 'Ejercicio obtenido exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse(null, 'Ejercicio no encontrado.', 404);
+        }
     }
 
     public function update(Request $request, $id)
     {
-        $ejercicio = Ejercicio::findOrFail($id);
-
         $validator = Validator::make($request->all(), [
             'tipo' => 'sometimes|string|max:100',
             'guia' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return $this->errorResponse($validator->errors(), 'Errores de validación', 422);
         }
 
-        $ejercicio->update($request->all());
-        return response()->json($ejercicio);
+        try {
+            $ejercicio = Ejercicio::findOrFail($id);
+            $ejercicio->update($request->all());
+            return $this->successResponse($ejercicio, 'Ejercicio actualizado exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al actualizar el ejercicio.', 500);
+        }
     }
 
     public function destroy($id)
     {
-        Ejercicio::findOrFail($id)->delete();
-        return response()->json(['message' => 'Ejercicio eliminado'], 200);
+        try {
+            $ejercicio = Ejercicio::findOrFail($id);
+            $ejercicio->delete();
+            return $this->successResponse(null, 'Ejercicio eliminado exitosamente.', 200);
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al eliminar el ejercicio.', 500);
+        }
     }
 }

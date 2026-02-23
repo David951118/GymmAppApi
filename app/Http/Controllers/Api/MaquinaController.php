@@ -11,7 +11,9 @@ class MaquinaController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Maquina::with(['centro', 'administrador.usuario', 'ejercicio']);
+        $limit = $request->get('limit', 15);
+        $query = Maquina::with(['centro', 'administrador.usuario', 'ejercicio'])
+            ->search($request->all());
 
         if ($request->has('centro_id')) {
             $query->where('centro_id', $request->centro_id);
@@ -21,8 +23,8 @@ class MaquinaController extends Controller
             $query->where('estado', $request->estado);
         }
 
-        $maquinas = $query->paginate(15);
-        return response()->json($maquinas);
+        $maquinas = $query->paginate($limit);
+        return $this->successResponse($maquinas, 'Máquinas obtenidas exitosamente.');
     }
 
     public function store(Request $request)
@@ -37,23 +39,29 @@ class MaquinaController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return $this->errorResponse($validator->errors(), 'Errores de validación', 422);
         }
 
-        $maquina = Maquina::create($request->all());
-        return response()->json($maquina->load(['centro', 'administrador.usuario', 'ejercicio']), 201);
+        try {
+            $maquina = Maquina::create($request->all());
+            return $this->successResponse($maquina->load(['centro', 'administrador.usuario', 'ejercicio']), 'Máquina creada exitosamente.', 201);
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al crear la máquina.', 500);
+        }
     }
 
     public function show($id)
     {
-        $maquina = Maquina::with(['centro', 'administrador.usuario', 'ejercicio'])->findOrFail($id);
-        return response()->json($maquina);
+        try {
+            $maquina = Maquina::with(['centro', 'administrador.usuario', 'ejercicio'])->findOrFail($id);
+            return $this->successResponse($maquina, 'Máquina obtenida exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse(null, 'Máquina no encontrada.', 404);
+        }
     }
 
     public function update(Request $request, $id)
     {
-        $maquina = Maquina::findOrFail($id);
-
         $validator = Validator::make($request->all(), [
             'nombre' => 'sometimes|string|max:150',
             'estado' => 'sometimes|string|max:50',
@@ -61,16 +69,26 @@ class MaquinaController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return $this->errorResponse($validator->errors(), 'Errores de validación', 422);
         }
 
-        $maquina->update($request->all());
-        return response()->json($maquina->load(['centro', 'administrador.usuario', 'ejercicio']));
+        try {
+            $maquina = Maquina::findOrFail($id);
+            $maquina->update($request->all());
+            return $this->successResponse($maquina->load(['centro', 'administrador.usuario', 'ejercicio']), 'Máquina actualizada exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al actualizar la máquina.', 500);
+        }
     }
 
     public function destroy($id)
     {
-        Maquina::findOrFail($id)->delete();
-        return response()->json(['message' => 'Máquina eliminada'], 200);
+        try {
+            $maquina = Maquina::findOrFail($id);
+            $maquina->delete();
+            return $this->successResponse(null, 'Máquina eliminada exitosamente.', 200);
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al eliminar la máquina.', 500);
+        }
     }
 }

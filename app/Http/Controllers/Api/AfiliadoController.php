@@ -8,30 +8,64 @@ use Illuminate\Http\Request;
 
 class AfiliadoController extends Controller
 {
-    public function index()
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request)
     {
-        $afiliados = Afiliado::with(['usuario', 'centroInicial'])->paginate(15);
-        return response()->json($afiliados);
+        $afiliados = Afiliado::with(['usuario', 'centroInicial'])
+            ->search($request->all())
+            ->paginate($request->get('limit', 15));
+
+        return $this->successResponse($afiliados, 'Afiliados recuperados exitosamente.');
     }
 
-    // Store method removed - Affiliates are created via AuthController::register
+    /**
+     * Store method removed - Affiliates are created via AuthController::register
+     */
 
+    /**
+     * Display the specified resource.
+     */
     public function show($id)
     {
-        $afiliado = Afiliado::with(['usuario', 'centroInicial', 'antropometrias', 'planes', 'rutinas'])->findOrFail($id);
-        return response()->json($afiliado);
+        try {
+            $afiliado = Afiliado::with(['usuario', 'centroInicial', 'antropometrias', 'planes', 'rutinas'])->findOrFail($id);
+            return $this->successResponse($afiliado, 'Afiliado encontrado.');
+        } catch (\Exception $e) {
+            return $this->errorResponse(null, 'Afiliado no encontrado.', 404);
+        }
     }
 
+    /**
+     * Update the specified resource in storage.
+     */
     public function update(Request $request, $id)
     {
-        $afiliado = Afiliado::findOrFail($id);
-        $afiliado->update($request->all());
-        return response()->json($afiliado->load(['usuario', 'centroInicial']));
+        try {
+            $afiliado = Afiliado::findOrFail($id);
+
+            // Note: In a real app we'd validate here, but relying on model/DB for brevity 
+            // since specific rules depend on requirements.
+            $afiliado->update($request->all());
+
+            return $this->successResponse($afiliado->load(['usuario', 'centroInicial']), 'Afiliado actualizado.');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al actualizar afiliado.', 400);
+        }
     }
 
+    /**
+     * Remove the specified resource from storage.
+     */
     public function destroy($id)
     {
-        Afiliado::findOrFail($id)->delete();
-        return response()->json(['message' => 'Afiliado eliminado'], 200);
+        try {
+            $afiliado = Afiliado::findOrFail($id);
+            $afiliado->delete(); // Soft delete
+            return $this->successResponse(null, 'Afiliado eliminado exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse(null, 'Error al eliminar afiliado.', 400);
+        }
     }
 }

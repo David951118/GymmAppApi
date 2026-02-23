@@ -11,14 +11,16 @@ class PlanController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Plan::with(['afiliado.usuario', 'pagos']);
+        $limit = $request->get('limit', 15);
+        $query = Plan::with(['afiliado.usuario', 'pagos'])
+            ->search($request->all());
 
         if ($request->has('afiliado_id')) {
             $query->where('afiliado_id', $request->afiliado_id);
         }
 
-        $planes = $query->paginate(15);
-        return response()->json($planes);
+        $planes = $query->paginate($limit);
+        return $this->successResponse($planes, 'Planes obtenidos exitosamente.');
     }
 
     public function store(Request $request)
@@ -33,23 +35,29 @@ class PlanController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return $this->errorResponse($validator->errors(), 'Errores de validación', 422);
         }
 
-        $plan = Plan::create($request->all());
-        return response()->json($plan->load('afiliado.usuario'), 201);
+        try {
+            $plan = Plan::create($request->all());
+            return $this->successResponse($plan->load('afiliado.usuario'), 'Plan creado exitosamente.', 201);
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al crear el plan.', 500);
+        }
     }
 
     public function show($id)
     {
-        $plan = Plan::with(['afiliado.usuario', 'pagos'])->findOrFail($id);
-        return response()->json($plan);
+        try {
+            $plan = Plan::with(['afiliado.usuario', 'pagos'])->findOrFail($id);
+            return $this->successResponse($plan, 'Plan obtenido exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse(null, 'Plan no encontrado.', 404);
+        }
     }
 
     public function update(Request $request, $id)
     {
-        $plan = Plan::findOrFail($id);
-
         $validator = Validator::make($request->all(), [
             'tipo' => 'sometimes|in:Mensual,Semestral,Anual',
             'fecha_inicio' => 'sometimes|date',
@@ -59,16 +67,26 @@ class PlanController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return $this->errorResponse($validator->errors(), 'Errores de validación', 422);
         }
 
-        $plan->update($request->all());
-        return response()->json($plan->load('afiliado.usuario'));
+        try {
+            $plan = Plan::findOrFail($id);
+            $plan->update($request->all());
+            return $this->successResponse($plan->load('afiliado.usuario'), 'Plan actualizado exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al actualizar el plan.', 500);
+        }
     }
 
     public function destroy($id)
     {
-        Plan::findOrFail($id)->delete();
-        return response()->json(['message' => 'Plan eliminado'], 200);
+        try {
+            $plan = Plan::findOrFail($id);
+            $plan->delete();
+            return $this->successResponse(null, 'Plan eliminado exitosamente.', 200);
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al eliminar el plan.', 500);
+        }
     }
 }

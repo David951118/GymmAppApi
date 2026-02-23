@@ -11,7 +11,10 @@ class ActividadDeportivaController extends Controller
 {
     public function index(Request $request)
     {
-        $query = ActividadDeportiva::with(['centro', 'profesional.usuario', 'afiliados']);
+        $limit = $request->get('limit', 15);
+
+        $query = ActividadDeportiva::with(['centro', 'profesional.usuario', 'afiliados'])
+            ->search($request->all());
 
         if ($request->has('centro_id')) {
             $query->where('centro_id', $request->centro_id);
@@ -21,8 +24,8 @@ class ActividadDeportivaController extends Controller
             $query->where('profesional_id', $request->profesional_id);
         }
 
-        $actividades = $query->orderBy('fecha', 'desc')->paginate(15);
-        return response()->json($actividades);
+        $actividades = $query->orderBy('fecha', 'desc')->paginate($limit);
+        return $this->successResponse($actividades, 'Actividades deportivas obtenidas exitosamente.');
     }
 
     public function store(Request $request)
@@ -36,23 +39,29 @@ class ActividadDeportivaController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return $this->errorResponse($validator->errors(), 'Errores de validación', 422);
         }
 
-        $actividad = ActividadDeportiva::create($request->all());
-        return response()->json($actividad->load(['centro', 'profesional.usuario']), 201);
+        try {
+            $actividad = ActividadDeportiva::create($request->all());
+            return $this->successResponse($actividad->load(['centro', 'profesional.usuario']), 'Actividad deportiva creada exitosamente.', 201);
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al crear la actividad deportiva.', 500);
+        }
     }
 
     public function show($id)
     {
-        $actividad = ActividadDeportiva::with(['centro', 'profesional.usuario', 'afiliados.usuario'])->findOrFail($id);
-        return response()->json($actividad);
+        try {
+            $actividad = ActividadDeportiva::with(['centro', 'profesional.usuario', 'afiliados.usuario'])->findOrFail($id);
+            return $this->successResponse($actividad, 'Actividad deportiva obtenida exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse(null, 'Actividad deportiva no encontrada.', 404);
+        }
     }
 
     public function update(Request $request, $id)
     {
-        $actividad = ActividadDeportiva::findOrFail($id);
-
         $validator = Validator::make($request->all(), [
             'fecha' => 'sometimes|date',
             'tipo' => 'sometimes|string|max:100',
@@ -60,17 +69,27 @@ class ActividadDeportivaController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return $this->errorResponse($validator->errors(), 'Errores de validación', 422);
         }
 
-        $actividad->update($request->all());
-        return response()->json($actividad->load(['centro', 'profesional.usuario']));
+        try {
+            $actividad = ActividadDeportiva::findOrFail($id);
+            $actividad->update($request->all());
+            return $this->successResponse($actividad->load(['centro', 'profesional.usuario']), 'Actividad deportiva actualizada exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al actualizar la actividad deportiva.', 500);
+        }
     }
 
     public function destroy($id)
     {
-        ActividadDeportiva::findOrFail($id)->delete();
-        return response()->json(['message' => 'Actividad eliminada'], 200);
+        try {
+            $actividad = ActividadDeportiva::findOrFail($id);
+            $actividad->delete();
+            return $this->successResponse(null, 'Actividad deportiva eliminada exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al eliminar la actividad deportiva.', 500);
+        }
     }
 
     /**
@@ -83,16 +102,20 @@ class ActividadDeportivaController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return $this->errorResponse($validator->errors(), 'Errores de validación', 422);
         }
 
-        $actividad = ActividadDeportiva::findOrFail($id);
+        try {
+            $actividad = ActividadDeportiva::findOrFail($id);
 
-        $actividad->afiliados()->attach($request->afiliado_id, [
-            'fecha_asistencia' => now(),
-            'fecha_inscripcion' => now(),
-        ]);
+            $actividad->afiliados()->attach($request->afiliado_id, [
+                'fecha_asistencia' => now(),
+                'fecha_inscripcion' => now(),
+            ]);
 
-        return response()->json(['message' => 'Asistencia registrada'], 201);
+            return $this->successResponse(null, 'Asistencia registrada exitosamente.', 201);
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al registrar la asistencia.', 500);
+        }
     }
 }
