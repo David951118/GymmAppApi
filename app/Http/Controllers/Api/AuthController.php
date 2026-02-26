@@ -95,7 +95,9 @@ class AuthController extends Controller
             return $this->errorResponse($validator->errors(), 'Error de validación', 422);
         }
 
-        $usuario = Usuario::where('correo', $request->correo)->first();
+        $usuario = Usuario::with(['afiliado', 'profesional', 'trabajador', 'administrador'])
+            ->where('correo', $request->correo)
+            ->first();
 
         if (!$usuario || !Hash::check($request->contrasena, $usuario->contrasena)) {
             return $this->errorResponse(null, 'Credenciales inválidas', 401);
