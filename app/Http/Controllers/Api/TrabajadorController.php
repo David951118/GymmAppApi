@@ -117,7 +117,37 @@ class TrabajadorController extends Controller
      */
     public function update(Request $request, $id)
     {
+        // precargar modelos para las reglas únicas
+        $trabajador = Trabajador::findOrFail($id);
+        $usuario = $trabajador->usuario;
+
         $validator = Validator::make($request->all(), [
+            // Datos de usuario
+            'nombre' => 'sometimes|string|max:150',
+            'apellidos' => 'sometimes|string|max:150',
+            'correo' => [
+                'sometimes',
+                'email',
+                \Illuminate\Validation\Rule::unique('usuarios', 'correo')->ignore($usuario->id_usuario, 'id_usuario')
+            ],
+            'cedula' => [
+                'sometimes',
+                'string',
+                'max:50',
+                \Illuminate\Validation\Rule::unique('usuarios', 'cedula')->ignore($usuario->id_usuario, 'id_usuario')
+            ],
+            'celular' => 'sometimes|string|max:30',
+            'genero' => 'sometimes|nullable|string|max:20',
+            'fecha_nacimiento' => 'sometimes|date',
+            'contrasena' => 'sometimes|string|min:8',
+
+            // Contacto de emergencia
+            'contacto_emergencia' => 'sometimes|array',
+            'contacto_emergencia.nombre' => 'sometimes|string|max:150',
+            'contacto_emergencia.celular' => 'sometimes|string|max:30',
+            'contactos_emergencia' => 'sometimes|array',
+
+            // Datos de trabajador
             'centro_id' => 'sometimes|exists:centro_deportivo,id_centro',
             'puesto' => 'sometimes|string|max:100',
         ]);
@@ -126,11 +156,67 @@ class TrabajadorController extends Controller
             return $this->errorResponse($validator->errors(), 'Errores de validación', 422);
         }
 
+        DB::beginTransaction();
         try {
             $trabajador = Trabajador::findOrFail($id);
-            $trabajador->update($request->all());
-            return $this->successResponse($trabajador->load(['usuario', 'centro']), 'Trabajador actualizado exitosamente.');
+            $usuario = $trabajador->usuario;
+
+            // Datos para actualizar usuario
+            $datosUsuario = [
+                'nombre' => $request->get('nombre', $usuario->nombre),
+                'apellidos' => $request->get('apellidos', $usuario->apellidos),
+                'correo' => $request->get('correo', $usuario->correo),
+                'cedula' => $request->get('cedula', $usuario->cedula),
+                'celular' => $request->get('celular', $usuario->celular),
+                'genero' => $request->get('genero', $usuario->genero),
+                'fecha_nacimiento' => $request->get('fecha_nacimiento', $usuario->fecha_nacimiento),
+            ];
+
+            // Si se envía contraseña, hashearla
+            if ($request->has('contrasena') && !empty($request->get('contrasena'))) {
+                $datosUsuario['contrasena'] = Hash::make($request->get('contrasena'));
+            }
+
+            // Actualizar usuario
+            $usuario->update($datosUsuario);
+
+            // Actualizar o crear contactos de emergencia
+            if ($request->has('contacto_emergencia')) {
+                $contactoData = $request->get('contacto_emergencia');
+                $contactoEmergencia = ContactoEmergencia::where('usuario_id', $usuario->id_usuario)->first();
+                
+                if ($contactoEmergencia) {
+                    $contactoEmergencia->update([
+                        'nombre' => $contactoData['nombre'] ?? $contactoEmergencia->nombre,
+                        'celular' => $contactoData['celular'] ?? $contactoEmergencia->celular,
+                    ]);
+                } else {
+                    ContactoEmergencia::create([
+                        'usuario_id' => $usuario->id_usuario,
+                        'nombre' => $contactoData['nombre'],
+                        'celular' => $contactoData['celular'],
+                    ]);
+                }
+            }
+
+            // Actualizar datos del trabajador
+            $datosTrabajador = [];
+            if ($request->has('centro_id')) {
+                $datosTrabajador['centro_id'] = $request->get('centro_id');
+            }
+            if ($request->has('puesto')) {
+                $datosTrabajador['puesto'] = $request->get('puesto');
+            }
+            
+            if (!empty($datosTrabajador)) {
+                $trabajador->update($datosTrabajador);
+            }
+
+            DB::commit();
+
+            return $this->successResponse($trabajador->load(['usuario.contactosEmergencia', 'centro']), 'Trabajador actualizado exitosamente.');
         } catch (\Exception $e) {
+            DB::rollBack();
             return $this->errorResponse($e->getMessage(), 'Error al actualizar el trabajador.', 500);
         }
     }
