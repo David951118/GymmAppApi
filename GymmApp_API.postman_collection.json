@@ -99,6 +99,32 @@
                             }
                         }
                     }
+                },
+                {
+                    "name": "Centros P\u00fablicos",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/centros\/public",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "centros",
+                                "public"
+                            ]
+                        }
+                    }
                 }
             ]
         },
@@ -245,7 +271,7 @@
                     }
                 },
                 {
-                    "name": "Crear",
+                    "name": "Crear (Staff)",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -259,17 +285,17 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/register",
+                            "raw": "{{base_url}}\/afiliados",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                "register"
+                                "afiliados"
                             ]
                         },
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"nombre\": \"Juan\",\n    \"apellidos\": \"Perez\",\n    \"correo\": \"juan73@example.com\",\n    \"celular\": \"12345678\",\n    \"contrasena\": \"password123\",\n    \"contrasena_confirmation\": \"password123\",\n    \"centro_id\": 1,\n    \"contacto_emergencia\": {\n        \"nombre\": \"Maria\",\n        \"celular\": \"98765432\"\n    }\n}",
+                            "raw": "{\n    \"nombre\": \"Afiliado\",\n    \"apellidos\": \"Test\",\n    \"correo\": \"nuevo_afiliado@gym.com\",\n    \"celular\": \"123\",\n    \"contrasena\": \"password123\",\n    \"centro_id\": 1,\n    \"contacto_emergencia\": {\n        \"nombre\": \"Contacto Test\",\n        \"celular\": \"123\"\n    }\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -1924,7 +1950,7 @@
             ]
         },
         {
-            "name": "Maquinas",
+            "name": "Centros Deportivos",
             "item": [
                 {
                     "name": "Listar",
@@ -1941,12 +1967,12 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/maquinas",
+                            "raw": "{{base_url}}\/centros",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                "maquinas"
+                                "centros"
                             ]
                         }
                     }
@@ -1966,12 +1992,12 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/maquinas",
+                            "raw": "{{base_url}}\/centros",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                "maquinas"
+                                "centros"
                             ]
                         },
                         "body": {
@@ -2000,12 +2026,12 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/maquinas\/1",
+                            "raw": "{{base_url}}\/centros\/1",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                "maquinas",
+                                "centros",
                                 "1"
                             ]
                         }
@@ -2026,12 +2052,12 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/maquinas\/1",
+                            "raw": "{{base_url}}\/centros\/1",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                "maquinas",
+                                "centros",
                                 "1"
                             ]
                         },
@@ -2061,14 +2087,79 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}\/maquinas\/1",
+                            "raw": "{{base_url}}\/centros\/1",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                "maquinas",
+                                "centros",
                                 "1"
                             ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Aplicacion",
+            "item": [
+                {
+                    "name": "Ver Configuraci\u00f3n",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/aplicacion",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "aplicacion"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Actualizar Configuraci\u00f3n (SuperAdmin)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}\/admin\/aplicacion",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "aplicacion"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"nombre_aplicacion\": \"Nuevo Nombre\",\n    \"gama_colores\": \"black,yellow\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
                         }
                     }
                 }

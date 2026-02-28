@@ -19,6 +19,15 @@ class CentroDeportivoController extends Controller
         return $this->successResponse($centros, 'Centros deportivos obtenidos exitosamente.');
     }
 
+    public function publicIndex(Request $request)
+    {
+        $centros = CentroDeportivo::select('id_centro', 'nombre')
+            ->search($request->all())
+            ->get();
+
+        return $this->successResponse($centros, 'Sedes deportivas (públicas) obtenidas exitosamente.');
+    }
+
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [

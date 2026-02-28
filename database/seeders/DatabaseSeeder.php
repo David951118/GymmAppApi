@@ -12,6 +12,7 @@ use App\Models\Afiliado;
 use App\Models\ActividadDeportiva;
 use App\Models\Ejercicio;
 use App\Models\ContactoEmergencia;
+use App\Models\Aplicacion;
 
 class DatabaseSeeder extends Seeder
 {
@@ -20,6 +21,15 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // 0. Configuración de Aplicación Default
+        Aplicacion::create([
+            'nombre_aplicacion' => 'GymmApp Pro',
+            'link_icono' => 'https://example.com/icon.png',
+            'gama_colores' => 'blue,white,black',
+            'logo' => 'https://example.com/logo.png',
+            'descripcion' => 'Sistema integral de gestión de gimnasios.',
+        ]);
+
         // 1. Crear Super Admin
         $superAdminUser = Usuario::create([
             'nombre' => 'Super',

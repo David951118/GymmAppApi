@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\CentroDeportivoController;
 use App\Http\Controllers\Api\MaquinaController;
 use App\Http\Controllers\Api\GlobalSearchController;
 use App\Http\Controllers\Api\HealthCheckController;
+use App\Http\Controllers\Api\AplicacionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -26,6 +27,8 @@ use App\Http\Controllers\Api\HealthCheckController;
 
 // Public routes
 Route::get('/health', HealthCheckController::class);
+Route::get('/centros/public', [CentroDeportivoController::class, 'publicIndex']);
+Route::get('/aplicacion', [AplicacionController::class, 'index']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 
@@ -43,6 +46,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         // ADMIN ROUTES - Creation of internal staff
         Route::middleware(['role:administrador'])->group(function () {
+            // Gestión de Configuración de Aplicación (Solo Super Admin)
+            Route::put('/admin/aplicacion', [AplicacionController::class, 'update'])->middleware('role:superadmin');
+
             // Gestión de Administradores (Solo Super Admin puede crear, validado en Controller/Middleware)
             Route::apiResource('admin/administradores', AdministradorController::class);
 
@@ -57,7 +63,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         // Afiliado routes - Accessible by afiliados, professionals and admins
         Route::middleware(['role:afiliado,profesional,administrador'])->group(function () {
-            Route::apiResource('afiliados', AfiliadoController::class)->except(['store']); // Store is via public register
+            // Todos pueden ver y modificar su propio afiliado, pero la creación es solo para staff
+            Route::apiResource('afiliados', AfiliadoController::class)->except(['store']);
+        });
+
+        // Store de afiliado para staff (crear perfil)
+        Route::middleware(['role:administrador,profesional,trabajador'])->group(function () {
+            Route::post('afiliados', [AfiliadoController::class, 'store']);
         });
 
         // Profesional routes - Read access
@@ -124,9 +136,16 @@ Route::middleware(['auth:sanctum'])->group(function () {
             });
         });
 
-        // Maquina routes - Admin only
-        Route::middleware(['role:administrador, profesional'])->group(function () {
-            Route::apiResource('maquinas', MaquinaController::class);
+        // Maquina routes - All authenticated users can read, only professionals and admins can write
+        Route::prefix('maquinas')->group(function () {
+            Route::get('/', [MaquinaController::class, 'index']);
+            Route::get('/{id}', [MaquinaController::class, 'show']);
+
+            Route::middleware(['role:administrador,profesional'])->group(function () {
+                Route::post('/', [MaquinaController::class, 'store']);
+                Route::put('/{id}', [MaquinaController::class, 'update']);
+                Route::delete('/{id}', [MaquinaController::class, 'destroy']);
+            });
         });
     });
 });
