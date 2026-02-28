@@ -125,7 +125,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         });
 
         // Maquina routes - Admin only
-        Route::middleware(['role:administrador'])->group(function () {
+        Route::middleware(['role:administrador, profesional'])->group(function () {
             Route::apiResource('maquinas', MaquinaController::class);
         });
     });
