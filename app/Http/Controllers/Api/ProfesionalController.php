@@ -39,7 +39,8 @@ class ProfesionalController extends Controller
             'celular' => 'required|string|max:30',
             'genero' => 'nullable|string|max:20',
             'fecha_nacimiento' => 'nullable|date',
-            'contrasena' => 'required|string|min:8|confirmed',
+            'contrasena' => 'required_without:password|string|min:8|confirmed',
+            'password' => 'required_without:contrasena|string|min:8|confirmed',
 
             // Contacto de emergencia (OBLIGATORIO)
             'contacto_emergencia.nombre' => 'required|string|max:150',
@@ -66,7 +67,7 @@ class ProfesionalController extends Controller
                 'celular' => $request->celular,
                 'genero' => $request->genero,
                 'fecha_nacimiento' => $request->fecha_nacimiento,
-                'contrasena' => Hash::make($request->contrasena),
+                'contrasena' => Hash::make($request->contrasena ?? $request->password),
                 'estado_usuario' => 'activo',
             ]);
 
@@ -118,7 +119,38 @@ class ProfesionalController extends Controller
      */
     public function update(Request $request, $id)
     {
+        // precargar profesional + usuario para reglas únicas
+        $profesional = Profesional::findOrFail($id);
+        $usuario = $profesional->usuario;
+
         $validator = Validator::make($request->all(), [
+            // Datos de usuario
+            'nombre' => 'sometimes|string|max:150',
+            'apellidos' => 'sometimes|string|max:150',
+            'correo' => [
+                'sometimes',
+                'email',
+                \Illuminate\Validation\Rule::unique('usuarios', 'correo')->ignore($usuario->id_usuario, 'id_usuario')
+            ],
+            'cedula' => [
+                'sometimes',
+                'string',
+                'max:50',
+                \Illuminate\Validation\Rule::unique('usuarios', 'cedula')->ignore($usuario->id_usuario, 'id_usuario')
+            ],
+            'celular' => 'sometimes|string|max:30',
+            'genero' => 'sometimes|nullable|string|max:20',
+            'fecha_nacimiento' => 'sometimes|date',
+            'contrasena' => 'sometimes|string|min:8',
+            'password' => 'sometimes|string|min:8',
+
+            // Contacto de emergencia
+            'contacto_emergencia' => 'sometimes|array',
+            'contacto_emergencia.nombre' => 'sometimes|string|max:150',
+            'contacto_emergencia.celular' => 'sometimes|string|max:30',
+            'contactos_emergencia' => 'sometimes|array',
+
+            // Datos de profesional
             'centro_id' => 'sometimes|exists:centro_deportivo,id_centro',
             'especialidad' => 'sometimes|string|max:150',
             'fecha_ingreso' => 'sometimes|date',
@@ -128,11 +160,77 @@ class ProfesionalController extends Controller
             return $this->errorResponse($validator->errors(), 'Errores de validación', 422);
         }
 
+        DB::beginTransaction();
         try {
             $profesional = Profesional::findOrFail($id);
-            $profesional->update($request->all());
-            return $this->successResponse($profesional->load(['usuario', 'centro']), 'Profesional actualizado exitosamente.');
+            $usuario = $profesional->usuario;
+
+            // Datos para actualizar usuario
+            $datosUsuario = [
+                'nombre' => $request->get('nombre', $usuario->nombre),
+                'apellidos' => $request->get('apellidos', $usuario->apellidos),
+                'correo' => $request->get('correo', $usuario->correo),
+                'cedula' => $request->get('cedula', $usuario->cedula),
+                'celular' => $request->get('celular', $usuario->celular),
+                'genero' => $request->get('genero', $usuario->genero),
+                'fecha_nacimiento' => $request->get('fecha_nacimiento', $usuario->fecha_nacimiento),
+            ];
+
+            // Si se envía contraseña, hashearla
+            $newPass = null;
+            if ($request->has('contrasena') && !empty($request->get('contrasena'))) {
+                $newPass = $request->get('contrasena');
+            } elseif ($request->has('password') && !empty($request->get('password'))) {
+                $newPass = $request->get('password');
+            }
+
+            if ($newPass) {
+                $datosUsuario['contrasena'] = Hash::make($newPass);
+            }
+
+            // Actualizar usuario
+            $usuario->update($datosUsuario);
+
+            // Actualizar o crear contactos de emergencia
+            if ($request->has('contacto_emergencia')) {
+                $contactoData = $request->get('contacto_emergencia');
+                $contactoEmergencia = ContactoEmergencia::where('usuario_id', $usuario->id_usuario)->first();
+                
+                if ($contactoEmergencia) {
+                    $contactoEmergencia->update([
+                        'nombre' => $contactoData['nombre'] ?? $contactoEmergencia->nombre,
+                        'celular' => $contactoData['celular'] ?? $contactoEmergencia->celular,
+                    ]);
+                } else {
+                    ContactoEmergencia::create([
+                        'usuario_id' => $usuario->id_usuario,
+                        'nombre' => $contactoData['nombre'],
+                        'celular' => $contactoData['celular'],
+                    ]);
+                }
+            }
+
+            // Actualizar datos del profesional
+            $datosProfesional = [];
+            if ($request->has('centro_id')) {
+                $datosProfesional['centro_id'] = $request->get('centro_id');
+            }
+            if ($request->has('especialidad')) {
+                $datosProfesional['especialidad'] = $request->get('especialidad');
+            }
+            if ($request->has('fecha_ingreso')) {
+                $datosProfesional['fecha_ingreso'] = $request->get('fecha_ingreso');
+            }
+            
+            if (!empty($datosProfesional)) {
+                $profesional->update($datosProfesional);
+            }
+
+            DB::commit();
+
+            return $this->successResponse($profesional->load(['usuario.contactosEmergencia', 'centro', 'actividades', 'rutinas']), 'Profesional actualizado exitosamente.');
         } catch (\Exception $e) {
+            DB::rollBack();
             return $this->errorResponse($e->getMessage(), 'Error al actualizar el profesional', 500);
         }
     }

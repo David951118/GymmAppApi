@@ -68,7 +68,7 @@ class AuthController extends Controller
             $token = $usuario->createToken('auth_token')->plainTextToken;
 
             return $this->successResponse([
-                'user' => $usuario->load('contactosEmergencia'),
+                'user' => $usuario->load('contactosEmergencia', 'administrador'),
                 'roles' => $usuario->getRoles(),
                 'afiliado' => $afiliado,
                 'access_token' => $token,
@@ -131,9 +131,9 @@ class AuthController extends Controller
      */
     public function me(Request $request)
     {
-        $usuario = $request->user();
+        $usuario = $request->user()->load(['contactosEmergencia', 'administrador', 'trabajador.centro']);
         return $this->successResponse([
-            'user' => $usuario->load('contactosEmergencia'),
+            'user' => $usuario,
             'roles' => $usuario->getRoles(),
         ], 'Perfil obtenido exitosamente.');
     }
