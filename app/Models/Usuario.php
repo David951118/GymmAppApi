@@ -104,17 +104,17 @@ class Usuario extends Authenticatable
     // Helper methods to check roles
     public function esAfiliado()
     {
-        return $this->afiliado()->exists();
+        return $this->relationLoaded('afiliado') ? $this->afiliado !== null : $this->afiliado()->exists();
     }
 
     public function esProfesional()
     {
-        return $this->profesional()->exists();
+        return $this->relationLoaded('profesional') ? $this->profesional !== null : $this->profesional()->exists();
     }
 
     public function esTrabajador()
     {
-        return $this->trabajador()->exists();
+        return $this->relationLoaded('trabajador') ? $this->trabajador !== null : $this->trabajador()->exists();
     }
 
     /**
@@ -122,7 +122,7 @@ class Usuario extends Authenticatable
      */
     public function esAdministrador(): bool
     {
-        return $this->administrador !== null;
+        return $this->relationLoaded('administrador') ? $this->administrador !== null : $this->administrador()->exists();
     }
 
     /**
@@ -143,11 +143,9 @@ class Usuario extends Authenticatable
         if ($this->esTrabajador())
             $roles[] = 'trabajador';
         if ($this->esAdministrador()) {
-            // Si es super admin, retorna 'superadmin', si no, retorna 'administrador'
-            if ($this->administrador && $this->administrador->is_super_admin === true) {
+            $roles[] = 'administrador';
+            if ($this->esSuperAdmin()) {
                 $roles[] = 'superadmin';
-            } else {
-                $roles[] = 'administrador';
             }
         }
         return $roles;
