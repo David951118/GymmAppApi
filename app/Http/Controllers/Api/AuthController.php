@@ -68,7 +68,7 @@ class AuthController extends Controller
             $token = $usuario->createToken('auth_token')->plainTextToken;
 
             return $this->successResponse([
-                'user' => $usuario->load('contactosEmergencia'),
+                'user' => $usuario->load('contactosEmergencia', 'administrador'),
                 'roles' => $usuario->getRoles(),
                 'afiliado' => $afiliado,
                 'access_token' => $token,
@@ -95,7 +95,7 @@ class AuthController extends Controller
             return $this->errorResponse($validator->errors(), 'Error de validación', 422);
         }
 
-        $usuario = Usuario::where('correo', $request->correo)->first();
+        $usuario = Usuario::with('administrador')->where('correo', $request->correo)->first();
 
         if (!$usuario || !Hash::check($request->contrasena, $usuario->contrasena)) {
             return $this->errorResponse(null, 'Credenciales inválidas', 401);
@@ -129,9 +129,9 @@ class AuthController extends Controller
      */
     public function me(Request $request)
     {
-        $usuario = $request->user();
+        $usuario = $request->user()->load('contactosEmergencia', 'administrador');
         return $this->successResponse([
-            'user' => $usuario->load('contactosEmergencia'),
+            'user' => $usuario,
             'roles' => $usuario->getRoles(),
         ], 'Perfil obtenido exitosamente.');
     }

@@ -142,8 +142,14 @@ class Usuario extends Authenticatable
             $roles[] = 'profesional';
         if ($this->esTrabajador())
             $roles[] = 'trabajador';
-        if ($this->esAdministrador())
-            $roles[] = 'administrador';
+        if ($this->esAdministrador()) {
+            // Si es super admin, retorna 'superadmin', si no, retorna 'administrador'
+            if ($this->administrador && $this->administrador->is_super_admin === true) {
+                $roles[] = 'superadmin';
+            } else {
+                $roles[] = 'administrador';
+            }
+        }
         return $roles;
     }
 }
