@@ -40,7 +40,8 @@ class TrabajadorController extends Controller
             'celular' => 'required|string|max:30',
             'genero' => 'nullable|string|max:20',
             'fecha_nacimiento' => 'nullable|date',
-            'contrasena' => 'required|string|min:8|confirmed',
+            'contrasena' => 'required_without:password|string|min:8|confirmed',
+            'password' => 'required_without:contrasena|string|min:8|confirmed',
 
             // Contacto de emergencia (OBLIGATORIO)
             'contacto_emergencia.nombre' => 'required|string|max:150',
@@ -66,7 +67,7 @@ class TrabajadorController extends Controller
                 'celular' => $request->celular,
                 'genero' => $request->genero,
                 'fecha_nacimiento' => $request->fecha_nacimiento,
-                'contrasena' => Hash::make($request->contrasena),
+                'contrasena' => Hash::make($request->contrasena ?? $request->password),
                 'estado_usuario' => 'activo',
             ]);
 
@@ -140,6 +141,7 @@ class TrabajadorController extends Controller
             'genero' => 'sometimes|nullable|string|max:20',
             'fecha_nacimiento' => 'sometimes|date',
             'contrasena' => 'sometimes|string|min:8',
+            'password' => 'sometimes|string|min:8',
 
             // Contacto de emergencia
             'contacto_emergencia' => 'sometimes|array',
@@ -173,8 +175,15 @@ class TrabajadorController extends Controller
             ];
 
             // Si se envía contraseña, hashearla
+            $newPass = null;
             if ($request->has('contrasena') && !empty($request->get('contrasena'))) {
-                $datosUsuario['contrasena'] = Hash::make($request->get('contrasena'));
+                $newPass = $request->get('contrasena');
+            } elseif ($request->has('password') && !empty($request->get('password'))) {
+                $newPass = $request->get('password');
+            }
+
+            if ($newPass) {
+                $datosUsuario['contrasena'] = Hash::make($newPass);
             }
 
             // Actualizar usuario
