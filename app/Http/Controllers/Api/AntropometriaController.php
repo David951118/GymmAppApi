@@ -88,4 +88,26 @@ class AntropometriaController extends Controller
             return $this->errorResponse($e->getMessage(), 'Error al eliminar la medición antropométrica.', 500);
         }
     }
+
+    public function restore($id)
+    {
+        try {
+            $item = Antropometria::withTrashed()->findOrFail($id);
+            $item->restore();
+            return $this->successResponse($item->fresh()->load(['afiliado.usuario']), 'Antropometría restaurado/a exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al restaurar Antropometría.', 500);
+        }
+    }
+
+    public function forceDelete($id)
+    {
+        try {
+            $item = Antropometria::withTrashed()->findOrFail($id);
+            $item->forceDelete();
+            return $this->successResponse(null, 'Antropometría eliminado/a permanentemente (Hard Delete).');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al eliminar permanentemente Antropometría.', 500);
+        }
+    }
 }

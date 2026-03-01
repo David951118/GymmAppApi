@@ -91,4 +91,26 @@ class PagoController extends Controller
             return $this->errorResponse($e->getMessage(), 'Error al eliminar el pago.', 500);
         }
     }
+
+    public function restore($id)
+    {
+        try {
+            $item = Pago::withTrashed()->findOrFail($id);
+            $item->restore();
+            return $this->successResponse($item->fresh()->load(['plan.afiliado.usuario']), 'Pago restaurado/a exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al restaurar Pago.', 500);
+        }
+    }
+
+    public function forceDelete($id)
+    {
+        try {
+            $item = Pago::withTrashed()->findOrFail($id);
+            $item->forceDelete();
+            return $this->successResponse(null, 'Pago eliminado/a permanentemente (Hard Delete).');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al eliminar permanentemente Pago.', 500);
+        }
+    }
 }

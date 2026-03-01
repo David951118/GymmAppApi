@@ -121,4 +121,26 @@ class RutinaController extends Controller
             return $this->errorResponse($e->getMessage(), 'Error al eliminar la rutina.', 500);
         }
     }
+
+    public function restore($id)
+    {
+        try {
+            $item = Rutina::withTrashed()->findOrFail($id);
+            $item->restore();
+            return $this->successResponse($item->fresh()->load(['afiliado.usuario', 'profesional.usuario', 'ejercicios']), 'Rutina restaurado/a exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al restaurar Rutina.', 500);
+        }
+    }
+
+    public function forceDelete($id)
+    {
+        try {
+            $item = Rutina::withTrashed()->findOrFail($id);
+            $item->forceDelete();
+            return $this->successResponse(null, 'Rutina eliminado/a permanentemente (Hard Delete).');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al eliminar permanentemente Rutina.', 500);
+        }
+    }
 }

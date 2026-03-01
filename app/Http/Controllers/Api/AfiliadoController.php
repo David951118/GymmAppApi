@@ -125,9 +125,31 @@ class AfiliadoController extends Controller
         try {
             $afiliado = Afiliado::findOrFail($id);
             $afiliado->delete(); // Soft delete
-            return $this->successResponse(null, 'Afiliado eliminado exitosamente.');
+            return $this->successResponse(null, 'Afiliado eliminado exitosamente (Soft Delete).');
         } catch (\Exception $e) {
             return $this->errorResponse(null, 'Error al eliminar afiliado.', 400);
+        }
+    }
+
+    public function restore($id)
+    {
+        try {
+            $afiliado = Afiliado::withTrashed()->findOrFail($id);
+            $afiliado->restore();
+            return $this->successResponse($afiliado->load(['usuario', 'centroInicial']), 'Afiliado restaurado exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al restaurar el afiliado.', 500);
+        }
+    }
+
+    public function forceDelete($id)
+    {
+        try {
+            $afiliado = Afiliado::withTrashed()->findOrFail($id);
+            $afiliado->forceDelete();
+            return $this->successResponse(null, 'Afiliado eliminado permanentemente (Hard Delete).');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al eliminar permanentemente el afiliado.', 500);
         }
     }
 }

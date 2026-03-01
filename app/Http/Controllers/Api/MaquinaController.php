@@ -91,4 +91,26 @@ class MaquinaController extends Controller
             return $this->errorResponse($e->getMessage(), 'Error al eliminar la máquina.', 500);
         }
     }
+
+    public function restore($id)
+    {
+        try {
+            $item = Maquina::withTrashed()->findOrFail($id);
+            $item->restore();
+            return $this->successResponse($item->fresh()->load(['centro', 'ejercicio']), 'Máquina restaurado/a exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al restaurar Máquina.', 500);
+        }
+    }
+
+    public function forceDelete($id)
+    {
+        try {
+            $item = Maquina::withTrashed()->findOrFail($id);
+            $item->forceDelete();
+            return $this->successResponse(null, 'Máquina eliminado/a permanentemente (Hard Delete).');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al eliminar permanentemente Máquina.', 500);
+        }
+    }
 }

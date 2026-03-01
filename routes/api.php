@@ -49,27 +49,34 @@ Route::middleware(['auth:sanctum'])->group(function () {
             // Gestión de Configuración de Aplicación (Solo Super Admin)
             Route::put('/admin/aplicacion', [AplicacionController::class, 'update'])->middleware('role:superadmin');
 
-            // Gestión de Administradores (Solo Super Admin puede crear, validado en Controller/Middleware)
+            // Gestión de Administradores
             Route::apiResource('admin/administradores', AdministradorController::class);
+            Route::post('admin/administradores/{id}/restore', [AdministradorController::class, 'restore']);
+            Route::delete('admin/administradores/{id}/force-delete', [AdministradorController::class, 'forceDelete']);
 
             // Gestión de Profesionales
             Route::post('/admin/profesionales', [ProfesionalController::class, 'store']);
             Route::put('/admin/profesionales/{id}', [ProfesionalController::class, 'update']);
             Route::delete('/admin/profesionales/{id}', [ProfesionalController::class, 'destroy']);
+            Route::post('/admin/profesionales/{id}/restore', [ProfesionalController::class, 'restore']);
+            Route::delete('/admin/profesionales/{id}/force-delete', [ProfesionalController::class, 'forceDelete']);
 
             // Gestión de Trabajadores
             Route::apiResource('admin/trabajadores', TrabajadorController::class);
+            Route::post('admin/trabajadores/{id}/restore', [TrabajadorController::class, 'restore']);
+            Route::delete('admin/trabajadores/{id}/force-delete', [TrabajadorController::class, 'forceDelete']);
         });
 
         // Afiliado routes - Accessible by afiliados, professionals and admins
         Route::middleware(['role:afiliado,profesional,administrador'])->group(function () {
-            // Todos pueden ver y modificar su propio afiliado, pero la creación es solo para staff
             Route::apiResource('afiliados', AfiliadoController::class)->except(['store']);
         });
 
-        // Store de afiliado para staff (crear perfil)
+        // Store / Restore / Hard Delete de afiliado para staff
         Route::middleware(['role:administrador,profesional,trabajador'])->group(function () {
             Route::post('afiliados', [AfiliadoController::class, 'store']);
+            Route::post('afiliados/{id}/restore', [AfiliadoController::class, 'restore']);
+            Route::delete('afiliados/{id}/force-delete', [AfiliadoController::class, 'forceDelete']);
         });
 
         // Profesional routes - Read access
@@ -79,21 +86,29 @@ Route::middleware(['auth:sanctum'])->group(function () {
         // Plan routes - Afiliados and admins
         Route::middleware(['role:afiliado,administrador'])->group(function () {
             Route::apiResource('planes', PlanController::class);
+            Route::post('planes/{id}/restore', [PlanController::class, 'restore']);
+            Route::delete('planes/{id}/force-delete', [PlanController::class, 'forceDelete']);
         });
 
         // Pago routes - Afiliados and admins
         Route::middleware(['role:afiliado,administrador'])->group(function () {
             Route::apiResource('pagos', PagoController::class);
+            Route::post('pagos/{id}/restore', [PagoController::class, 'restore']);
+            Route::delete('pagos/{id}/force-delete', [PagoController::class, 'forceDelete']);
         });
 
         // Antropometria routes - Afiliados, profesionales, and admins
         Route::middleware(['role:afiliado,profesional,administrador'])->group(function () {
             Route::apiResource('antropometrias', AntropometriaController::class);
+            Route::post('antropometrias/{id}/restore', [AntropometriaController::class, 'restore']);
+            Route::delete('antropometrias/{id}/force-delete', [AntropometriaController::class, 'forceDelete']);
         });
 
         // Rutina routes - Afiliados, profesionales, and admins
         Route::middleware(['role:afiliado,profesional,administrador'])->group(function () {
             Route::apiResource('rutinas', RutinaController::class);
+            Route::post('rutinas/{id}/restore', [RutinaController::class, 'restore']);
+            Route::delete('rutinas/{id}/force-delete', [RutinaController::class, 'forceDelete']);
         });
 
         // Ejercicio routes - All authenticated users can read, only professionals and admins can write
@@ -105,6 +120,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 Route::post('/', [EjercicioController::class, 'store']);
                 Route::put('/{id}', [EjercicioController::class, 'update']);
                 Route::delete('/{id}', [EjercicioController::class, 'destroy']);
+                Route::post('/{id}/restore', [EjercicioController::class, 'restore']);
+                Route::delete('/{id}/force-delete', [EjercicioController::class, 'forceDelete']);
             });
         });
 
@@ -121,6 +138,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 Route::post('/', [ActividadDeportivaController::class, 'store']);
                 Route::put('/{id}', [ActividadDeportivaController::class, 'update']);
                 Route::delete('/{id}', [ActividadDeportivaController::class, 'destroy']);
+                Route::post('/{id}/restore', [ActividadDeportivaController::class, 'restore']);
+                Route::delete('/{id}/force-delete', [ActividadDeportivaController::class, 'forceDelete']);
             });
         });
 
@@ -133,6 +152,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 Route::post('/', [CentroDeportivoController::class, 'store']);
                 Route::put('/{id}', [CentroDeportivoController::class, 'update']);
                 Route::delete('/{id}', [CentroDeportivoController::class, 'destroy']);
+                Route::post('/{id}/restore', [CentroDeportivoController::class, 'restore']);
+                Route::delete('/{id}/force-delete', [CentroDeportivoController::class, 'forceDelete']);
             });
         });
 
@@ -146,6 +167,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 Route::put('/{id}', [MaquinaController::class, 'update']);
                 Route::patch('/{id}', [MaquinaController::class, 'update']);
                 Route::delete('/{id}', [MaquinaController::class, 'destroy']);
+                Route::post('/{id}/restore', [MaquinaController::class, 'restore']);
+                Route::delete('/{id}/force-delete', [MaquinaController::class, 'forceDelete']);
             });
         });
     });

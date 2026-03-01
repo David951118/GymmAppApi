@@ -248,4 +248,26 @@ class ProfesionalController extends Controller
             return $this->errorResponse($e->getMessage(), 'Error al eliminar el profesional.', 500);
         }
     }
+
+    public function restore($id)
+    {
+        try {
+            $item = Profesional::withTrashed()->findOrFail($id);
+            $item->restore();
+            return $this->successResponse($item->fresh()->load(['usuario', 'centro']), 'Profesional restaurado/a exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al restaurar Profesional.', 500);
+        }
+    }
+
+    public function forceDelete($id)
+    {
+        try {
+            $item = Profesional::withTrashed()->findOrFail($id);
+            $item->forceDelete();
+            return $this->successResponse(null, 'Profesional eliminado/a permanentemente (Hard Delete).');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al eliminar permanentemente Profesional.', 500);
+        }
+    }
 }
