@@ -21,6 +21,7 @@ class EjercicioController extends Controller
         $validator = Validator::make($request->all(), [
             'tipo' => 'required|string|max:100',
             'guia' => 'nullable|string',
+            'video_url' => 'nullable|string|max:1000',
         ]);
 
         if ($validator->fails()) {
@@ -50,6 +51,7 @@ class EjercicioController extends Controller
         $validator = Validator::make($request->all(), [
             'tipo' => 'sometimes|string|max:100',
             'guia' => 'nullable|string',
+            'video_url' => 'nullable|string|max:1000',
         ]);
 
         if ($validator->fails()) {
