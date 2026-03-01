@@ -19,6 +19,7 @@ class Ejercicio extends Model
     protected $fillable = [
         'tipo',
         'guia',
+        'video_url',
     ];
 
     // Relationships
