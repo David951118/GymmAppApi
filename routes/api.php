@@ -165,6 +165,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::middleware(['role:administrador,profesional'])->group(function () {
                 Route::post('/', [MaquinaController::class, 'store']);
                 Route::put('/{id}', [MaquinaController::class, 'update']);
+                Route::patch('/{id}', [MaquinaController::class, 'update']);
                 Route::delete('/{id}', [MaquinaController::class, 'destroy']);
                 Route::post('/{id}/restore', [MaquinaController::class, 'restore']);
                 Route::delete('/{id}/force-delete', [MaquinaController::class, 'forceDelete']);

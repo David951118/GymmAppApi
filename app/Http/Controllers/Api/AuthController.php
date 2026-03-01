@@ -131,7 +131,7 @@ class AuthController extends Controller
      */
     public function me(Request $request)
     {
-        $usuario = $request->user()->load(['contactosEmergencia', 'administrador', 'trabajador.centro']);
+        $usuario = $request->user()->load(['contactosEmergencia', 'profesional', 'administrador', 'trabajador.centro', 'afiliado']);
         return $this->successResponse([
             'user' => $usuario,
             'roles' => $usuario->getRoles(),
