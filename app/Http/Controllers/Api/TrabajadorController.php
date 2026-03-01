@@ -243,4 +243,26 @@ class TrabajadorController extends Controller
             return $this->errorResponse($e->getMessage(), 'Error al eliminar el trabajador.', 500);
         }
     }
+
+    public function restore($id)
+    {
+        try {
+            $item = Trabajador::withTrashed()->findOrFail($id);
+            $item->restore();
+            return $this->successResponse($item->fresh()->load(['usuario', 'centro']), 'Trabajador restaurado/a exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al restaurar Trabajador.', 500);
+        }
+    }
+
+    public function forceDelete($id)
+    {
+        try {
+            $item = Trabajador::withTrashed()->findOrFail($id);
+            $item->forceDelete();
+            return $this->successResponse(null, 'Trabajador eliminado/a permanentemente (Hard Delete).');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al eliminar permanentemente Trabajador.', 500);
+        }
+    }
 }

@@ -96,4 +96,26 @@ class CentroDeportivoController extends Controller
             return $this->errorResponse($e->getMessage(), 'Error al eliminar el centro deportivo.', 500);
         }
     }
+
+    public function restore($id)
+    {
+        try {
+            $item = CentroDeportivo::withTrashed()->findOrFail($id);
+            $item->restore();
+            return $this->successResponse($item->fresh()->load(['profesionales.usuario', 'trabajadores.usuario', 'administradores.usuario']), 'Centro deportivo restaurado/a exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al restaurar Centro deportivo.', 500);
+        }
+    }
+
+    public function forceDelete($id)
+    {
+        try {
+            $item = CentroDeportivo::withTrashed()->findOrFail($id);
+            $item->forceDelete();
+            return $this->successResponse(null, 'Centro deportivo eliminado/a permanentemente (Hard Delete).');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al eliminar permanentemente Centro deportivo.', 500);
+        }
+    }
 }

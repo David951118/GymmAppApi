@@ -245,4 +245,26 @@ class AdministradorController extends Controller
             return $this->errorResponse($e->getMessage(), 'Error al eliminar administrador', 500);
         }
     }
+
+    public function restore($id)
+    {
+        try {
+            $item = Administrador::withTrashed()->findOrFail($id);
+            $item->restore();
+            return $this->successResponse($item->fresh()->load(['usuario']), 'Administrador restaurado/a exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al restaurar Administrador.', 500);
+        }
+    }
+
+    public function forceDelete($id)
+    {
+        try {
+            $item = Administrador::withTrashed()->findOrFail($id);
+            $item->forceDelete();
+            return $this->successResponse(null, 'Administrador eliminado/a permanentemente (Hard Delete).');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al eliminar permanentemente Administrador.', 500);
+        }
+    }
 }

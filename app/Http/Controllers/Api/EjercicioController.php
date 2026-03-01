@@ -75,4 +75,26 @@ class EjercicioController extends Controller
             return $this->errorResponse($e->getMessage(), 'Error al eliminar el ejercicio.', 500);
         }
     }
+
+    public function restore($id)
+    {
+        try {
+            $item = Ejercicio::withTrashed()->findOrFail($id);
+            $item->restore();
+            return $this->successResponse($item->fresh()->load([]), 'Ejercicio restaurado/a exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al restaurar Ejercicio.', 500);
+        }
+    }
+
+    public function forceDelete($id)
+    {
+        try {
+            $item = Ejercicio::withTrashed()->findOrFail($id);
+            $item->forceDelete();
+            return $this->successResponse(null, 'Ejercicio eliminado/a permanentemente (Hard Delete).');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al eliminar permanentemente Ejercicio.', 500);
+        }
+    }
 }

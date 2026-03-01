@@ -43,8 +43,8 @@ class GlobalSearchController extends Controller
             'rutinas' => Rutina::where('nombre', 'ILIKE', "%{$query}%")
                 ->limit(5)->get(),
 
-            'ejercicios' => Ejercicio::where('nombre', 'ILIKE', "%{$query}%")
-                ->orWhere('tipo', 'ILIKE', "%{$query}%")
+            'ejercicios' => Ejercicio::where('tipo', 'ILIKE', "%{$query}%")
+                ->orWhere('guia', 'ILIKE', "%{$query}%")
                 ->limit(5)->get(),
         ];
 

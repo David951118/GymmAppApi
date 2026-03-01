@@ -89,4 +89,26 @@ class PlanController extends Controller
             return $this->errorResponse($e->getMessage(), 'Error al eliminar el plan.', 500);
         }
     }
+
+    public function restore($id)
+    {
+        try {
+            $item = Plan::withTrashed()->findOrFail($id);
+            $item->restore();
+            return $this->successResponse($item->fresh()->load(['afiliado.usuario']), 'Plan restaurado/a exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al restaurar Plan.', 500);
+        }
+    }
+
+    public function forceDelete($id)
+    {
+        try {
+            $item = Plan::withTrashed()->findOrFail($id);
+            $item->forceDelete();
+            return $this->successResponse(null, 'Plan eliminado/a permanentemente (Hard Delete).');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al eliminar permanentemente Plan.', 500);
+        }
+    }
 }

@@ -30,7 +30,22 @@ class ActividadDeportivaController extends Controller
 
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        $user = $request->user();
+        $profesional = $user ? $user->profesional : null;
+
+        $data = $request->all();
+
+        // Si es un profesional, asignar su ID y su centro si no vienen en el request
+        if ($profesional) {
+            if (!$request->has('profesional_id')) {
+                $data['profesional_id'] = $profesional->id_profesional;
+            }
+            if (!$request->has('centro_id')) {
+                $data['centro_id'] = $profesional->centro_id;
+            }
+        }
+
+        $validator = Validator::make($data, [
             'centro_id' => 'required|exists:centro_deportivo,id_centro',
             'profesional_id' => 'nullable|exists:profesionales,id_profesional',
             'fecha' => 'required|date',
@@ -43,7 +58,7 @@ class ActividadDeportivaController extends Controller
         }
 
         try {
-            $actividad = ActividadDeportiva::create($request->all());
+            $actividad = ActividadDeportiva::create($data);
             return $this->successResponse($actividad->load(['centro', 'profesional.usuario']), 'Actividad deportiva creada exitosamente.', 201);
         } catch (\Exception $e) {
             return $this->errorResponse($e->getMessage(), 'Error al crear la actividad deportiva.', 500);
@@ -86,9 +101,31 @@ class ActividadDeportivaController extends Controller
         try {
             $actividad = ActividadDeportiva::findOrFail($id);
             $actividad->delete();
-            return $this->successResponse(null, 'Actividad deportiva eliminada exitosamente.');
+            return $this->successResponse(null, 'Actividad deportiva eliminada exitosamente (Soft Delete).');
         } catch (\Exception $e) {
             return $this->errorResponse($e->getMessage(), 'Error al eliminar la actividad deportiva.', 500);
+        }
+    }
+
+    public function restore($id)
+    {
+        try {
+            $actividad = ActividadDeportiva::withTrashed()->findOrFail($id);
+            $actividad->restore();
+            return $this->successResponse($actividad->fresh()->load(['centro', 'profesional.usuario']), 'Actividad deportiva restaurada exitosamente.');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al restaurar la actividad deportiva.', 500);
+        }
+    }
+
+    public function forceDelete($id)
+    {
+        try {
+            $actividad = ActividadDeportiva::withTrashed()->findOrFail($id);
+            $actividad->forceDelete();
+            return $this->successResponse(null, 'Actividad deportiva eliminada permanentemente (Hard Delete).');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 'Error al eliminar permanentemente la actividad deportiva.', 500);
         }
     }
 
